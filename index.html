@@ -1,0 +1,719 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+<meta charset="UTF-8">
+<meta name="viewport" content="width=device-width, initial-scale=1.0">
+<title>Toni Agost — Reykjavík Booking</title>
+<script src="https://www.gstatic.com/firebasejs/12.16.0/firebase-app-compat.js"></script>
+<script src="https://www.gstatic.com/firebasejs/12.16.0/firebase-firestore-compat.js"></script>
+<script src="https://www.gstatic.com/firebasejs/12.16.0/firebase-storage-compat.js"></script>
+<link rel="preconnect" href="https://fonts.googleapis.com">
+<link href="https://fonts.googleapis.com/css2?family=IBM+Plex+Mono:wght@400;500&family=Inter:wght@400;500;600;800&family=Newsreader:ital@1&display=swap" rel="stylesheet">
+<style>
+  :root{
+    --paper:#EAE7DF;
+    --panel:#F3F1EA;
+    --ink:#17161A;
+    --muted:#8B8579;
+    --line:#CBC6B9;
+  }
+  *{ box-sizing:border-box; }
+  body{
+    margin:0;
+    background-color:var(--paper);
+    background-image:
+      radial-gradient(rgba(23,22,26,0.035) 0.6px, transparent 0.6px);
+    background-size: 5px 5px;
+    color:var(--ink);
+    font-family:'Inter',sans-serif;
+  }
+  .page{
+    max-width:840px;
+    margin:0 auto;
+    padding:56px 28px 120px;
+  }
+
+  .topbar{
+    display:flex;
+    align-items:baseline;
+    gap:16px;
+    font-family:'IBM Plex Mono',monospace;
+    font-size:12px;
+    letter-spacing:0.08em;
+    color:var(--ink);
+    text-transform:uppercase;
+    padding-bottom:120px;
+  }
+  .topbar .dim{ color:var(--muted); }
+
+  .hero{ padding-bottom:56px; }
+  .city-tag{
+    display:inline-flex;
+    align-items:center;
+    gap:8px;
+    font-family:'IBM Plex Mono',monospace;
+    font-size:11px;
+    text-transform:uppercase;
+    letter-spacing:0.08em;
+    color:var(--ink);
+    border:1px solid var(--ink);
+    padding:6px 12px;
+    margin-bottom:22px;
+  }
+  .city-tag .dot{ width:6px; height:6px; border-radius:50%; background:var(--ink); }
+  h1{
+    font-family:'Inter',sans-serif;
+    font-weight:800;
+    font-size:clamp(38px, 6.4vw, 58px);
+    line-height:0.98;
+    letter-spacing:-0.01em;
+    margin:0 0 22px;
+    max-width:640px;
+  }
+  .accent{
+    font-family:'Newsreader',serif;
+    font-style:italic;
+    font-weight:400;
+    font-size:19px;
+    color:var(--ink);
+    max-width:540px;
+    margin:0 0 18px;
+    line-height:1.5;
+  }
+  .lede{
+    font-family:'IBM Plex Mono',monospace;
+    font-size:12.5px;
+    line-height:1.7;
+    color:var(--muted);
+    max-width:540px;
+  }
+  .notice{
+    margin-top:26px;
+    padding:16px 18px;
+    border:1px solid var(--line);
+    background:var(--panel);
+    font-family:'IBM Plex Mono',monospace;
+    font-size:11.5px;
+    line-height:1.7;
+    color:var(--ink);
+    max-width:640px;
+  }
+  .notice b{ font-weight:500; }
+
+  .chapter{ margin-top:64px; }
+  .chapter-head{
+    display:flex;
+    justify-content:space-between;
+    align-items:baseline;
+    border-bottom:1px solid var(--ink);
+    padding-bottom:12px;
+    margin-bottom:6px;
+  }
+  .chapter-num{
+    font-family:'IBM Plex Mono',monospace;
+    font-size:13px;
+    color:var(--muted);
+    margin-right:14px;
+  }
+  .chapter-title{
+    font-family:'Inter',sans-serif;
+    font-weight:800;
+    font-size:15px;
+    letter-spacing:0.04em;
+    text-transform:uppercase;
+    flex:1;
+  }
+  .chapter-count{
+    font-family:'IBM Plex Mono',monospace;
+    font-size:11px;
+    color:var(--muted);
+  }
+
+  .field-row{
+    display:grid;
+    grid-template-columns:92px 1fr;
+    gap:22px;
+    padding:24px 0;
+    border-bottom:1px dashed var(--line);
+    align-items:start;
+  }
+  .field-row:last-child{ border-bottom:none; }
+  .field-index{
+    font-family:'IBM Plex Mono',monospace;
+    font-size:12.5px;
+    color:var(--muted);
+    padding-top:3px;
+  }
+  .field-body label.title{
+    display:block;
+    font-family:'Inter',sans-serif;
+    font-weight:600;
+    font-size:14px;
+    margin-bottom:12px;
+    letter-spacing:0.01em;
+  }
+  .field-body label.title .req{
+    font-family:'IBM Plex Mono',monospace;
+    color:var(--muted);
+    font-weight:400;
+    font-size:11px;
+    text-transform:uppercase;
+    margin-left:8px;
+  }
+  .field-body p.info{
+    font-family:'IBM Plex Mono',monospace;
+    font-size:12.5px;
+    line-height:1.75;
+    color:var(--muted);
+    margin:0;
+    max-width:560px;
+  }
+  .field-body p.info b{ color:var(--ink); font-weight:500; }
+  .hint{
+    font-family:'IBM Plex Mono',monospace;
+    font-size:11.5px;
+    color:var(--muted);
+    margin-top:-6px;
+    margin-bottom:12px;
+    line-height:1.6;
+  }
+
+  @media (max-width:560px){
+    .field-row{ grid-template-columns:56px 1fr; gap:14px; }
+  }
+
+  input[type=text], input[type=email], input[type=tel], input[type=number]{
+    width:100%;
+    font-family:'IBM Plex Mono',monospace;
+    font-size:14px;
+    padding:8px 2px;
+    background:transparent;
+    border:none;
+    border-bottom:1px solid var(--line);
+    color:var(--ink);
+    outline:none;
+    transition:border-color .15s ease;
+  }
+  input::placeholder, textarea::placeholder{ color:#B4AE9E; }
+  input:focus, textarea:focus, select:focus{ border-color:var(--ink); }
+
+  select{
+    width:100%;
+    font-family:'IBM Plex Mono',monospace;
+    font-size:14px;
+    padding:8px 2px;
+    background:transparent;
+    border:none;
+    border-bottom:1px solid var(--line);
+    color:var(--ink);
+    outline:none;
+    appearance:none;
+    -webkit-appearance:none;
+    background-image:url("data:image/svg+xml;utf8,<svg xmlns='http://www.w3.org/2000/svg' width='10' height='6'><path d='M0 0 L5 6 L10 0' stroke='%238B8579' fill='none'/></svg>");
+    background-repeat:no-repeat;
+    background-position:right 4px center;
+  }
+
+  textarea{
+    width:100%;
+    font-family:'IBM Plex Mono',monospace;
+    font-size:14px;
+    line-height:1.6;
+    padding:12px;
+    background:var(--panel);
+    border:1px solid var(--line);
+    color:var(--ink);
+    outline:none;
+    resize:vertical;
+    min-height:90px;
+    transition:border-color .15s ease;
+  }
+
+  .row2{ display:grid; grid-template-columns:1fr 1fr; gap:24px; }
+  .row3{ display:grid; grid-template-columns:1.3fr 1fr 1fr; gap:24px; }
+  @media (max-width:560px){ .row2, .row3{ grid-template-columns:1fr; gap:16px; } }
+  .stack{ display:flex; flex-direction:column; gap:16px; }
+
+  .budget-tag{
+    display:inline-block;
+    font-family:'Newsreader',serif;
+    font-style:italic;
+    font-size:14px;
+    color:var(--muted);
+    margin-bottom:10px;
+  }
+
+  .filebox{
+    display:flex;
+    align-items:center;
+    justify-content:space-between;
+    gap:12px;
+    border:1px dashed var(--line);
+    padding:16px 14px;
+    cursor:pointer;
+    font-family:'IBM Plex Mono',monospace;
+    font-size:11.5px;
+    text-transform:uppercase;
+    letter-spacing:0.04em;
+    color:var(--muted);
+    background:var(--panel);
+  }
+  .filebox.has-file{ border-style:solid; color:var(--ink); }
+  .filebox input{ display:none; }
+  .filebox .browse{ color:var(--ink); text-decoration:underline; text-underline-offset:3px; white-space:nowrap; }
+
+  .consent-row{
+    border-top:1px solid var(--ink);
+    margin-top:56px;
+    padding-top:22px;
+    display:flex;
+    gap:14px;
+    align-items:flex-start;
+  }
+  .consent-row input{
+    margin-top:4px;
+    width:14px; height:14px;
+    accent-color:var(--ink);
+  }
+  .consent-row p{
+    font-family:'IBM Plex Mono',monospace;
+    font-size:11px;
+    line-height:1.8;
+    color:var(--muted);
+    margin:0;
+  }
+
+  .submit-row{
+    margin-top:36px;
+    border-top:1px solid var(--line);
+    padding-top:20px;
+  }
+  button[type=submit]{
+    width:100%;
+    background:none;
+    border:none;
+    display:flex;
+    justify-content:space-between;
+    align-items:center;
+    font-family:'IBM Plex Mono',monospace;
+    font-size:13px;
+    letter-spacing:0.08em;
+    text-transform:uppercase;
+    color:var(--ink);
+    padding:14px 0;
+    cursor:pointer;
+    transition:opacity .15s ease, letter-spacing .15s ease;
+  }
+  button[type=submit]:hover{ opacity:0.6; letter-spacing:0.12em; }
+  .status{
+    display:none;
+    margin-top:14px;
+    font-family:'IBM Plex Mono',monospace;
+    font-size:11.5px;
+    color:var(--muted);
+  }
+  .status.show{ display:block; }
+
+  footer{
+    margin-top:90px;
+    border-top:1px solid var(--line);
+  }
+  .foot-row{
+    display:flex;
+    flex-wrap:wrap;
+    gap:8px 28px;
+    padding:16px 0;
+    border-bottom:1px solid var(--line);
+    font-family:'IBM Plex Mono',monospace;
+    font-size:11px;
+    text-transform:uppercase;
+    letter-spacing:0.04em;
+    color:var(--muted);
+  }
+  .foot-row span{ white-space:nowrap; }
+  .foot-contact{
+    padding-top:18px;
+    display:flex;
+    flex-wrap:wrap;
+    gap:8px 32px;
+    font-family:'IBM Plex Mono',monospace;
+    font-size:12px;
+    color:var(--ink);
+  }
+  .foot-contact b{ color:var(--muted); font-weight:400; margin-right:8px; }
+</style>
+</head>
+<body>
+<div class="page">
+
+  <div class="topbar">
+    <span>00.0</span>
+    <span class="dim">/</span>
+    <span>Booking Form — Reykjavík</span>
+  </div>
+
+  <div class="hero">
+    <div class="city-tag"><span class="dot"></span>Reykjavík · now booking</div>
+    <h1>Book with<br>Toni&nbsp;Agost</h1>
+    <p class="accent">An official booking request — appointments held at Aftur Og Aftur, Reykjavík.</p>
+    <p class="lede">Fill out the form below with everything I need to schedule your appointment. Once submitted, I'll reply within a few days with a date, estimated price, and deposit details — please be patient. I won't be taking bookings via DM this period, but feel free to message if you need help with the form.</p>
+    <div class="notice">
+      <b>Please note —</b> after I send the first email, your spot is held for 24 hours. If I don't hear back by then, I'll move on to the next request — check spam as well as your inbox during this time.
+    </div>
+  </div>
+
+  <form id="bookingForm" action="https://formsubmit.co/bookings@toniagost.com" method="POST" enctype="multipart/form-data">
+    <input type="hidden" name="_subject" value="New booking request — Reykjavík — Toni Agost">
+    <input type="hidden" name="_template" value="table">
+    <input type="hidden" name="_captcha" value="false">
+    <input type="hidden" name="City" value="Reykjavík">
+    <input type="text" name="_honey" style="display:none">
+    <input type="hidden" name="_autoresponse" value="Thank you for requesting an appointment with me! <3 I will get back to you in the next few days with a date, estimated price, and how to pay the deposit (a non-refundable €70, which confirms your appointment).
+
+I'll also send relevant information such as the studio address — I'll be working from Aftur Og Aftur, Reykjavík — please read it carefully!
+
+After I send the first email, I will reserve your spot for 24hs. If I don't hear back from you by then, I will move on to the next person on the list. Make sure to check your spam and your inbox during this time.
+
+I won't be taking appointments via dm this booking period, it is easier for me to keep track of everything via email. But feel free to send me a message if you need any help with the form.
+
+Can't wait to meet you !!
+
+Love,
+Toni.">
+
+    <!-- CHAPTER 00 -->
+    <div class="chapter">
+      <div class="chapter-head">
+        <div style="display:flex;align-items:baseline;">
+          <span class="chapter-num">00</span>
+          <span class="chapter-title">Good to know</span>
+        </div>
+        <span class="chapter-count">00.1 — 00.4</span>
+      </div>
+
+      <div class="field-row">
+        <div class="field-index">00.1 /</div>
+        <div class="field-body">
+          <label class="title">The deposit</label>
+          <p class="info">A <b>€70 non-refundable deposit</b> confirms your appointment. You can reschedule up to 7 days before your appointment and your deposit carries over — cancelling inside 7 days means paying a new deposit for a slot in the same or next booking period.</p>
+        </div>
+      </div>
+
+      <div class="field-row">
+        <div class="field-index">00.2 /</div>
+        <div class="field-body">
+          <label class="title">The design</label>
+          <p class="info">My flashes are one of a kind, except quotes/lettering and small ornamentals — see the "Flash" highlight for details. Custom designs are always welcome as long as they fit my style. I won't send custom designs ahead of time, but I'll have a few variations ready to finalize together at the appointment.</p>
+        </div>
+      </div>
+
+      <div class="field-row">
+        <div class="field-index">00.3 /</div>
+        <div class="field-body">
+          <label class="title">The placement</label>
+          <p class="info">I'll need a rough idea of placement to quote a price, but I'm happy to discuss the final placement together at the appointment. Keep in mind the final price may differ from the quote if you change placement or size on the day.</p>
+        </div>
+      </div>
+
+      <div class="field-row">
+        <div class="field-index">00.4 /</div>
+        <div class="field-body">
+          <label class="title">The appointment</label>
+          <p class="info">Appointments take place at <b>Aftur Og Aftur, Reykjavík</b>. Please be on time — message me right away if you're running late. The waiting area is small, so let me know in advance if you're bringing a friend, and wear something that makes it easy to reach your tattoo's placement.</p>
+        </div>
+      </div>
+    </div>
+
+    <!-- CHAPTER 01 -->
+    <div class="chapter">
+      <div class="chapter-head">
+        <div style="display:flex;align-items:baseline;">
+          <span class="chapter-num">01</span>
+          <span class="chapter-title">About you</span>
+        </div>
+        <span class="chapter-count">01.1 — 01.7</span>
+      </div>
+
+      <div class="field-row">
+        <div class="field-index">01.1 /</div>
+        <div class="field-body">
+          <label class="title">Name<span class="req">required</span></label>
+          <div class="row2">
+            <input type="text" name="First Name" placeholder="First name" required>
+            <input type="text" name="Last Name" placeholder="Last name" required>
+          </div>
+        </div>
+      </div>
+
+      <div class="field-row">
+        <div class="field-index">01.2 /</div>
+        <div class="field-body">
+          <label class="title">Pronouns</label>
+          <input type="text" name="Pronouns" placeholder="she/her, he/him, they/them…">
+        </div>
+      </div>
+
+      <div class="field-row">
+        <div class="field-index">01.3 /</div>
+        <div class="field-body">
+          <label class="title">Age<span class="req">required</span></label>
+          <input type="number" name="Age" min="16" max="120" style="max-width:140px" required>
+        </div>
+      </div>
+
+      <div class="field-row">
+        <div class="field-index">01.4 /</div>
+        <div class="field-body">
+          <label class="title">Address<span class="req">required</span></label>
+          <div class="stack">
+            <input type="text" name="Street Address" placeholder="Street address" required>
+            <input type="text" name="Street Address Line 2" placeholder="Apt, suite, etc. (optional)">
+            <div class="row3">
+              <input type="text" name="City (Address)" placeholder="City" required>
+              <input type="text" name="State / Province" placeholder="State / Province">
+              <input type="text" name="Postal Code" placeholder="Postal / ZIP code" required>
+            </div>
+          </div>
+        </div>
+      </div>
+
+      <div class="field-row">
+        <div class="field-index">01.5 /</div>
+        <div class="field-body">
+          <label class="title">Phone number<span class="req">required</span></label>
+          <div class="row2">
+            <input type="text" name="Area Code" placeholder="Area / country code" required>
+            <input type="tel" name="Phone Number" placeholder="Phone number" required>
+          </div>
+        </div>
+      </div>
+
+      <div class="field-row">
+        <div class="field-index">01.6 /</div>
+        <div class="field-body">
+          <label class="title">Email<span class="req">required</span></label>
+          <input type="email" name="Email" placeholder="example@example.com" required>
+        </div>
+      </div>
+
+      <div class="field-row">
+        <div class="field-index">01.7 /</div>
+        <div class="field-body">
+          <label class="title">Instagram<span class="req">required</span></label>
+          <input type="text" name="Instagram" placeholder="@yourhandle" required>
+        </div>
+      </div>
+    </div>
+
+    <!-- CHAPTER 02 -->
+    <div class="chapter">
+      <div class="chapter-head">
+        <div style="display:flex;align-items:baseline;">
+          <span class="chapter-num">02</span>
+          <span class="chapter-title">The tattoo</span>
+        </div>
+        <span class="chapter-count">02.1 — 02.3</span>
+      </div>
+
+      <div class="field-row">
+        <div class="field-index">02.1 /</div>
+        <div class="field-body">
+          <label class="title">How many tattoos would you like to get at the appointment?<span class="req">required</span></label>
+          <input type="text" name="Tattoo Count" placeholder="e.g. 1, 2, a small set…" required>
+        </div>
+      </div>
+
+      <div class="field-row">
+        <div class="field-index">02.2 /</div>
+        <div class="field-body">
+          <label class="title">What would you like to get?<span class="req">required</span></label>
+          <div class="hint">Design, placement, size, and color. Remember: quotes/lettering and small ornamentals can be fully custom — everything else is chosen from my flashes.</div>
+          <textarea name="Tattoo Idea" required></textarea>
+        </div>
+      </div>
+
+      <div class="field-row">
+        <div class="field-index">02.3 /</div>
+        <div class="field-body">
+          <label class="title">Attach your design or inspiration<span class="req">required</span></label>
+          <label class="filebox" id="fileboxLabel">
+            <span id="fileboxText">Drag a file, or browse</span>
+            <span class="browse">Choose file</span>
+            <input type="file" name="attachment" id="fileInput" required>
+          </label>
+        </div>
+      </div>
+    </div>
+
+    <!-- CHAPTER 03 -->
+    <div class="chapter">
+      <div class="chapter-head">
+        <div style="display:flex;align-items:baseline;">
+          <span class="chapter-num">03</span>
+          <span class="chapter-title">The appointment</span>
+        </div>
+        <span class="chapter-count">03.1 — 03.3</span>
+      </div>
+
+      <div class="field-row">
+        <div class="field-index">03.1 /</div>
+        <div class="field-body">
+          <label class="title">Which month works for you?<span class="req">required</span></label>
+          <select name="Preferred Month" required>
+            <option value="">Select a month…</option>
+            <option>January</option><option>February</option><option>March</option>
+            <option>April</option><option>May</option><option>June</option>
+            <option>July</option><option>August</option><option>September</option>
+            <option>October</option><option>November</option><option>December</option>
+            <option>Flexible / not sure yet</option>
+          </select>
+        </div>
+      </div>
+
+      <div class="field-row">
+        <div class="field-index">03.2 /</div>
+        <div class="field-body">
+          <label class="title">Your budget<span class="req">required</span></label>
+          <span class="budget-tag">appointments start at €250 · deposit is €70</span>
+          <input type="text" name="Budget" placeholder="e.g. €250–400" required>
+        </div>
+      </div>
+
+      <div class="field-row">
+        <div class="field-index">03.3 /</div>
+        <div class="field-body">
+          <label class="title">What days/times would work best?<span class="req">required</span></label>
+          <textarea name="Availability" style="min-height:64px" required></textarea>
+        </div>
+      </div>
+    </div>
+
+    <!-- CHAPTER 04 -->
+    <div class="chapter">
+      <div class="chapter-head">
+        <div style="display:flex;align-items:baseline;">
+          <span class="chapter-num">04</span>
+          <span class="chapter-title">Consent</span>
+        </div>
+        <span class="chapter-count">04.1</span>
+      </div>
+
+      <div class="consent-row">
+        <input type="checkbox" required id="consentBox">
+        <p>
+          I understand this form does not guarantee an appointment. I'll be contacted via email for follow-up, and will be required to send a non-refundable €70 deposit via PayPal within 24 hours of agreeing to a time — until then, my appointment isn't confirmed. I can reschedule up to 7 days before my appointment without losing my deposit; cancelling inside 7 days means paying a new deposit. I understand my final price may change if I adjust my design, placement, or size after booking, and that appointments take place at Aftur Og Aftur, Reykjavík.
+        </p>
+      </div>
+    </div>
+
+    <div class="submit-row">
+      <button type="submit">
+        <span>Submit booking request</span>
+        <span>→</span>
+      </button>
+      <div class="status" id="statusBox">Sending your request to the studio…</div>
+    </div>
+  </form>
+
+  <footer>
+    <div class="foot-row">
+      <span>Fine line</span><span>Illustrative</span><span>Blackwork</span><span>Custom pieces</span>
+    </div>
+    <div class="foot-row" style="border-bottom:none;">
+      <span>Aftur Og Aftur</span><span>Reykjavík, Iceland</span>
+    </div>
+    <div class="foot-contact">
+      <span><b>(e).</b>bookings@toniagost.com</span>
+      <span><b>(ig).</b>@toniagost</span>
+    </div>
+  </footer>
+
+</div>
+
+<script>
+  const fileInput = document.getElementById('fileInput');
+  const fileboxText = document.getElementById('fileboxText');
+  const fileboxLabel = document.getElementById('fileboxLabel');
+  fileInput.addEventListener('change', () => {
+    if(fileInput.files.length){
+      fileboxText.textContent = fileInput.files[0].name;
+      fileboxLabel.classList.add('has-file');
+    }
+  });
+
+  const firebaseConfig = {
+    apiKey: "AIzaSyAGwKqASaB7-ryHpbjXMYANnpqP_KC7bC8",
+    authDomain: "toniagost-app.firebaseapp.com",
+    projectId: "toniagost-app",
+    storageBucket: "toniagost-app.firebasestorage.app",
+    messagingSenderId: "62278378303",
+    appId: "1:62278378303:web:ada753e0d88d2be3f2a98a"
+  };
+  firebase.initializeApp(firebaseConfig);
+  const db = firebase.firestore();
+  const storage = firebase.storage();
+
+  const form = document.getElementById('bookingForm');
+  const statusBox = document.getElementById('statusBox');
+
+  form.addEventListener('submit', async (e) => {
+    e.preventDefault();
+    statusBox.classList.add('show');
+
+    let attachmentPath = '';
+    let attachmentName = '';
+
+    if(fileInput.files.length){
+      try{
+        const file = fileInput.files[0];
+        attachmentName = file.name;
+        const safeName = Date.now() + '_' + file.name.replace(/[^a-zA-Z0-9.\-_]/g, '_');
+        attachmentPath = 'attachments/' + safeName;
+        const ref = storage.ref().child(attachmentPath);
+        await ref.put(file);
+      } catch(err){
+        console.error('Could not upload attachment', err);
+        // Continue anyway — the request itself should still save
+      }
+    }
+
+    try{
+      await db.collection('requests').add({
+        first: form['First Name'].value,
+        last: form['Last Name'].value,
+        city: form['City'].value,
+        pronouns: form['Pronouns'].value,
+        age: form['Age'].value,
+        address: [
+          form['Street Address'].value,
+          form['Street Address Line 2'].value,
+          form['City (Address)'].value,
+          form['State / Province'].value,
+          form['Postal Code'].value
+        ].filter(Boolean).join(', '),
+        phone: [form['Area Code'].value, form['Phone Number'].value].filter(Boolean).join(' '),
+        email: form['Email'].value,
+        instagram: form['Instagram'].value,
+        tattooCount: form['Tattoo Count'].value,
+        idea: form['Tattoo Idea'].value,
+        month: form['Preferred Month'].value,
+        budget: form['Budget'].value,
+        availability: form['Availability'].value,
+        attachmentPath: attachmentPath,
+        attachmentName: attachmentName,
+        notes: '',
+        status: 'New',
+        source: 'reykjavik form',
+        createdAt: firebase.firestore.FieldValue.serverTimestamp()
+      });
+    } catch(err){
+      console.error('Could not save to tracker', err);
+      // Don't block the email flow even if this fails
+    }
+
+    form.submit();
+  });
+</script>
+
+</body>
+</html>
